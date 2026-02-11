@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Chore List</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --card: #ffffff;
+      --text: #273043;
+      --muted: #5f6c7b;
+      --accent: #1d7874;
+      --accent-soft: #d9f2f0;
+      --done: #6e7f80;
+      --shadow: 0 10px 30px rgba(39, 48, 67, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, #ffe2b8 0, transparent 32%),
+        radial-gradient(circle at 85% 10%, #cde9ff 0, transparent 30%),
+        var(--bg);
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3.3vw, 2.4rem);
+      line-height: 1.1;
+    }
+
+    .subtext {
+      margin: 0.2rem 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .reset-btn {
+      border: none;
+      border-radius: 14px;
+      padding: 0.9rem 1.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .reset-btn:active {
+      transform: translateY(1px);
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .column {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .column h2 {
+      margin: 0 0 0.8rem;
+      font-size: 1.4rem;
+      border-bottom: 3px solid var(--accent-soft);
+      padding-bottom: 0.35rem;
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .item label {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.65rem 0.7rem;
+      border-radius: 12px;
+      background: #f8fafc;
+      cursor: pointer;
+      font-size: clamp(1rem, 2.8vw, 1.2rem);
+      user-select: none;
+    }
+
+    .item input {
+      width: 1.35rem;
+      height: 1.35rem;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .item input:checked + span {
+      text-decoration: line-through;
+      color: var(--done);
+    }
+
+    @media (max-width: 760px) {
+      .columns {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div>
+        <h1>Family Chore List</h1>
+        <p class="subtext">Check chores off as you finish them.</p>
+      </div>
+      <button id="resetButton" class="reset-btn" type="button">Reset for New Day</button>
+    </header>
+
+    <section id="columns" class="columns"></section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "family-chore-list-v1";
+    const CHORES_FILE = "chores.json";
+    const columnsContainer = document.getElementById("columns");
+    const resetButton = document.getElementById("resetButton");
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch (_error) {
+        return {};
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function toSlug(text) {
+      return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    }
+
+    function getCheckboxes() {
+      return Array.from(document.querySelectorAll("input[type='checkbox'][data-key]"));
+    }
+
+    async function loadChoreConfig() {
+      const response = await fetch(CHORES_FILE, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Could not load chores.json");
+      }
+      return response.json();
+    }
+
+    function renderColumns(config) {
+      columnsContainer.innerHTML = "";
+      const state = loadState();
+
+      config.columns.forEach((column) => {
+        const article = document.createElement("article");
+        article.className = "column";
+
+        const heading = document.createElement("h2");
+        heading.textContent = column.title;
+        article.appendChild(heading);
+
+        const list = document.createElement("ul");
+        list.className = "list";
+
+        column.items.forEach((itemText) => {
+          const key = `${column.id}-${toSlug(itemText)}`;
+          const li = document.createElement("li");
+          li.className = "item";
+
+          const label = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.dataset.key = key;
+          checkbox.checked = Boolean(state[key]);
+
+          checkbox.addEventListener("change", () => {
+            const nextState = loadState();
+            nextState[key] = checkbox.checked;
+            saveState(nextState);
+          });
+
+          const span = document.createElement("span");
+          span.textContent = itemText;
+
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          li.appendChild(label);
+          list.appendChild(li);
+        });
+
+        article.appendChild(list);
+        columnsContainer.appendChild(article);
+      });
+    }
+
+    resetButton.addEventListener("click", () => {
+      getCheckboxes().forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+      saveState({});
+    });
+
+    loadChoreConfig()
+      .then(renderColumns)
+      .catch(() => {
+        columnsContainer.innerHTML = "<p>Could not load chores list.</p>";
+      });
+  </script>
+</body>
+</html>

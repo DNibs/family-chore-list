@@ -1,0 +1,30 @@
+{
+  "columns": [
+    {
+      "id": "morning",
+      "title": "Morning Chores",
+      "items": [
+        "Eat breakfast",
+        "Brush teeth",
+        "Brush and clip hair",
+        "Deodorant",
+        "Pack lunch",
+        "Pack homework",
+        "Prepare shoes, coats, gloves"
+      ]
+    },
+    {
+      "id": "dinner",
+      "title": "Dinner Chores (Afternoon)",
+      "items": [
+        "Take out trash",
+        "Take out recycling",
+        "Take rags to laundry",
+        "Get mail",
+        "Wipe down table",
+        "Pick up toys",
+        "Sweep floor"
+      ]
+    }
+  ]
+}
